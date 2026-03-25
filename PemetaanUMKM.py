@@ -2,111 +2,143 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-from sklearn.cluster import KMeans # INI OTAK MACHINE LEARNING-NYA
+from sklearn.cluster import KMeans
+import google.generativeai as genai
+import re
 
-# --- 1. KONFIGURASI TAMPILAN ---
-st.set_page_config(page_title="GeoCluster Malawele | K-Means Spatial", layout="wide")
+# --- 1. KONFIGURASI AI ---
+# Masukkan API Key Anda di sini jika ingin fitur AI-nya hidup.
+# Jika dibiarkan, sistem akan otomatis murni memakai pencarian lokal.
+API_KEY = "MASUKKAN_API_KEY_ANDA_DI_SINI" 
 
-st.markdown("""
-    <style>
-    .header-box { background-color: var(--primary-color); padding: 1.2rem; border-radius: 8px; text-align: center; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 2rem; font-weight: bold; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .sub-header { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; margin-bottom: 1rem; font-weight: bold; font-size: 1.5rem; }
-    </style>
-    """, unsafe_allow_html=True)
+if API_KEY != "MASUKKAN_API_KEY_ANDA_DI_SINI":
+    try:
+        genai.configure(api_key=API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception:
+        model = None
+else:
+    model = None
 
-# --- 2. LOAD DATASET ---
+st.set_page_config(page_title="WebGIS UMKM | Hybrid Engine", layout="wide")
+
+# --- 2. LOAD DATA (ANTI-ERROR PARSER) ---
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv('dataset_umkm.csv', sep=None, engine='python')
+        # Parameter on_bad_lines='skip' akan membuang baris cacat secara otomatis
+        df = pd.read_csv('dataset_umkm.csv', sep=',', engine='python', on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.lower()
-        df = df.dropna(how='all')
         
-        required_cols = ['nama', 'kategori', 'alamat', 'lat', 'lon']
-        missing = [col for col in required_cols if col not in df.columns]
-        if missing:
-            st.error(f"Sistem gagal menemukan kolom {missing}.")
-            st.stop()
-        
-        # Bersihkan format lat/lon sejak awal
         df['lat'] = pd.to_numeric(df['lat'].astype(str).str.replace(',', '.'), errors='coerce')
         df['lon'] = pd.to_numeric(df['lon'].astype(str).str.replace(',', '.'), errors='coerce')
-        df = df.dropna(subset=['lat', 'lon']) # Buang data cacat
+        df = df.dropna(subset=['lat', 'lon', 'nama'])
+        
+        # Klastering K-Means
+        if len(df) >= 3:
+            kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+            df['cluster'] = kmeans.fit_predict(df[['lat', 'lon']])
+        else:
+            df['cluster'] = 0
             
         return df
-    except FileNotFoundError:
-        st.error("FATAL ERROR: File 'dataset_umkm.csv' tidak ditemukan.")
+    except Exception as e:
+        st.error(f"Eror Kritis Dataset: {e}")
         st.stop()
 
 df = load_data()
 
-# --- 3. ANTARMUKA PENCARIAN (UI) ---
-st.markdown('<div class="header-box"> WebGIS K-Means Clustering UMKM Malawele</div>', unsafe_allow_html=True)
-search_query = st.text_input("", placeholder="Ketik Nama Jalan atau Nama UMKM...")
+# --- 3. LOGIKA MESIN (AI & MANUAL) ---
+def panggil_ai(query, data_konteks):
+    if not model: 
+        return None
+    try:
+        prompt = f"""
+        Anda adalah Asisten UMKM Malawele. Jawab pertanyaan user: '{query}'.
+        Gunakan data referensi ini (jika relevan): {data_konteks.to_dict()}
+        Jawab dengan presisi, singkat, dan jangan mengarang data.
+        """
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception:
+        return None
 
-if not df.empty:
-    if search_query:
-        mask = df['alamat'].astype(str).str.contains(search_query, case=False, na=False) | \
-               df['nama'].astype(str).str.contains(search_query, case=False, na=False)
-        filtered_df = df[mask].copy()
-    else:
-        filtered_df = df.copy()
-
-    # --- 4. EKSEKUSI MACHINE LEARNING (K-MEANS) ---
-    # Kita bagi menjadi 3 zona klaster (syarat: minimal harus ada 3 data UMKM)
-    if len(filtered_df) >= 3:
-        kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
-        filtered_df['cluster'] = kmeans.fit_predict(filtered_df[['lat', 'lon']])
-    else:
-        # Jika data kurang dari 3 hasil pencarian, paksa masuk ke klaster 0
-        filtered_df['cluster'] = 0
-
-    # --- 5. RENDER PETA ---
-    col_map, col_list = st.columns([2, 1])
+def smart_filter(query, data):
+    if not query: 
+        return data
+        
+    stopwords = ['di', 'dan', 'yang', 'ada', 'ke', 'dari', 'pada']
+    keywords = [k for k in re.findall(r'\w+', query.lower()) if k not in stopwords]
     
-    with col_map:
-        # PUSAT PETA MUTLAK KELURAHAN MALAWELE
-        center_lat = -0.9648
-        center_lon = 131.3059
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=15)
-        
-        # Palet warna untuk membedakan hasil zona K-Means
-        warna_klaster = {0: 'red', 1: 'blue', 2: 'green'}
-        
-        for _, row in filtered_df.iterrows():
-            lat, lon = row['lat'], row['lon']
-            zona_id = row['cluster']
-            warna_pin = warna_klaster.get(zona_id, 'gray')
-            
-            google_maps_url = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}"
-            popup_html = f"""
-            <div style="font-family: Arial; font-size: 12px;">
-                <b>{row['nama']}</b><br>
-                Kategori: {row['kategori']}<br>
-                {row['alamat']}<br>
-                <b>Zona Klaster: {zona_id + 1}</b><br><br>
-                <a href="{google_maps_url}" target="_blank" style="background-color: #28a745; color: white; padding: 6px 12px; text-align: center; text-decoration: none; display: inline-block; border-radius: 4px; font-weight: bold;">
-                    🗺️ Rute ke Sini
-                </a>
-            </div>
-            """
-            
-            folium.Marker(
-                location=[lat, lon],
-                popup=folium.Popup(popup_html, max_width=300),
-                tooltip=f"Klik untuk detail (Zona {zona_id + 1})",
-                icon=folium.Icon(color=warna_pin, icon="info-sign")
-            ).add_to(m)
-                
-        st_folium(m, width="100%", height=500)
+    if not keywords: 
+        return data
 
-    with col_list:
-        st.markdown('<div class="sub-header">📑 Direktori UMKM</div>', unsafe_allow_html=True)
-        if not filtered_df.empty:
-            # Tampilkan juga kolom zona di tabel agar terlihat ilmiah
-            display_df = filtered_df[['nama', 'kategori', 'cluster']].copy()
-            display_df.columns = ['Nama UMKM', 'Kategori', 'Zona Klaster']
-            display_df['Zona Klaster'] = display_df['Zona Klaster'] + 1
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
-        else:
-            st.warning("Data tidak ditemukan.")
+    def logic(row):
+        text = f"{row['nama']} {row['alamat']} {row.get('kategori', '')}".lower()
+        text = re.sub(r'[^\w\s]', '', text) 
+        return all(k in text for k in keywords)
+        
+    return data[data.apply(logic, axis=1)]
+
+# --- 4. ANTARMUKA PENGGUNA (UI) ---
+st.markdown("### 📍 WebGIS UMKM Malawele (Hybrid AI)")
+query_user = st.text_input("🔍 Cari Lokasi atau Tanya AI:", placeholder="Contoh: bengkel di jl wortel")
+
+filtered_df = smart_filter(query_user, df)
+
+col_map, col_ai = st.columns([2, 1])
+
+# Render Peta
+with col_map:
+    if not filtered_df.empty:
+        start_loc = [filtered_df['lat'].mean(), filtered_df['lon'].mean()]
+        zoom = 17 if len(filtered_df) < 5 else 16
+    else:
+        # Default koordinat Sorong/Aimas
+        start_loc = [-0.9648, 131.3059] 
+        zoom = 15
+
+    m = folium.Map(location=start_loc, zoom_start=zoom)
+    colors = {0: 'red', 1: 'blue', 2: 'green'}
+    
+    for _, row in filtered_df.iterrows():
+        popup_html = f"""
+        <div style="font-family: sans-serif; min-width: 160px;">
+            <b style="color: #1f1f1f;">{row['nama'].upper()}</b><br>
+            <span style="font-size: 12px; color: #555;">{row['alamat']}</span>
+            <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ddd;">
+            <a href="https://www.google.com/maps/dir/?api=1&destination={row['lat']},{row['lon']}" 
+               target="_blank" 
+               style="background-color: #4285F4; color: white; padding: 8px 10px; text-decoration: none; border-radius: 4px; font-size: 11px; display: block; text-align: center; font-weight: bold;">
+               🚗 BUKA RUTE GOOGLE MAPS
+            </a>
+        </div>
+        """
+        folium.Marker(
+            location=[row['lat'], row['lon']],
+            popup=folium.Popup(popup_html, max_width=250),
+            icon=folium.Icon(color=colors.get(row['cluster'], 'gray'), icon='info-sign')
+        ).add_to(m)
+        
+    st_folium(m, width="100%", height=500, key="map")
+
+# Render AI / Hasil Manual
+with col_ai:
+    st.subheader("🤖 Analisis Sistem")
+    
+    if query_user:
+        with st.spinner("Memproses kueri..."):
+            jawaban_ai = panggil_ai(query_user, filtered_df.head(5))
+            
+            if jawaban_ai:
+                st.success("⚡ AI Respons:")
+                st.write(jawaban_ai)
+                st.caption("Peta di samping juga telah disaring berdasarkan kueri Anda.")
+            else:
+                st.warning("⚠️ AI Offline / Limit. Mode Pencarian Lokal Aktif:")
+                if filtered_df.empty:
+                    st.write("Tidak ada kecocokan data.")
+                else:
+                    st.dataframe(filtered_df[['nama', 'alamat']], hide_index=True)
+    else:
+        st.info(f"Sistem siap. Total data valid dirender: {len(df)} UMKM.")
