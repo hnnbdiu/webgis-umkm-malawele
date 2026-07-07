@@ -732,6 +732,40 @@ iframe {
     hr {
         margin: 10px 0 !important;
     }
+
+    /* ============================================
+       PAKSA SEMUA st.columns() TUMPUK VERTIKAL
+       (root cause layout mobile tidak responsif)
+       ============================================ */
+    [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        gap: 0 !important;
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"],
+    [data-testid="stHorizontalBlock"] > [data-testid="column"],
+    [data-testid="stHorizontalBlock"] > div[class*="column"] {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+        margin-bottom: 14px !important;
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child,
+    [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    /* Radio "Metode Lokasi" jadi horizontal rapi (bukan vertikal tumpuk aneh) */
+    .stRadio > div {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+    }
+
+    /* Peta & AI panel tidak lagi berdempetan tanpa jarak */
+    .map-wrapper {
+        margin-bottom: 16px !important;
+    }
 }
 
 /* =============================================
@@ -753,6 +787,29 @@ iframe {
     }
     iframe[title*="streamlit"] {
         height: 280px !important;
+    }
+
+    /* Sidebar full-width saat dibuka di HP kecil */
+    [data-testid="stSidebar"] {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Kolom tetap tumpuk vertikal di breakpoint ini juga */
+    [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"],
+    [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Konsol pencarian & filter kategori: teks input jangan sampai zoom otomatis di iOS */
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div {
+        font-size: 16px !important;
     }
 }
 </style>
