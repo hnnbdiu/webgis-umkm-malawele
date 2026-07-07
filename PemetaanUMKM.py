@@ -597,163 +597,26 @@ iframe {
 }
 
 /* =============================================
-   RESPONSIF — TABLET (max 1024px)
+   PAKSA MODE DESKTOP PERMANEN
    ============================================= */
-@media (max-width: 1024px) {
-    .hero-header h1 {
-        font-size: 1.3rem !important;
-    }
-    .block-container {
-        padding-left: 1.2rem !important;
-        padding-right: 1.2rem !important;
-    }
-    .ai-panel {
-        padding: 14px !important;
-    }
+/* 1. Paksa lebar minimal kanvas menjadi resolusi desktop */
+[data-testid="stAppViewContainer"] > section > div.block-container {
+    min-width: 1024px !important;
+    max-width: 1400px !important;
 }
 
-/* =============================================
-   RESPONSIF — MOBILE (max 768px)
-   ============================================= */
-@media (max-width: 768px) {
-
-    /* Padding konten lebih rapat */
-    .block-container {
-        padding-top: 0.8rem !important;
-        padding-left: 0.7rem !important;
-        padding-right: 0.7rem !important;
-        padding-bottom: 1.2rem !important;
-    }
-
-    /* Hero header lebih kompak */
-    .hero-header {
-        padding: 14px 16px 12px 16px !important;
-        margin-bottom: 12px !important;
-        border-left-width: 3px !important;
-    }
-    .hero-header h1 {
-        font-size: 1.05rem !important;
-        letter-spacing: 0.03em !important;
-    }
-    .hero-header .hero-sub {
-        font-size: 0.62rem !important;
-        letter-spacing: 0.08em !important;
-    }
-    .hero-status {
-        font-size: 0.62rem !important;
-        padding: 2px 8px !important;
-    }
-
-    /* Control card lebih rapat */
-    .control-card {
-        padding: 12px 14px !important;
-        margin-bottom: 10px !important;
-    }
-
-    /* Input dan selectbox full width */
-    .stTextInput, .stSelectbox {
-        width: 100% !important;
-    }
-    .stTextInput > div > div > input {
-        font-size: 1rem !important;
-        padding: 10px 12px !important;
-    }
-
-    /* Radio tombol lebih kecil */
-    .stRadio > div > label {
-        padding: 5px 10px !important;
-        font-size: 0.78rem !important;
-    }
-
-    /* Peta lebih pendek di HP */
-    iframe[title*="streamlit"] {
-        height: 320px !important;
-    }
-
-    /* AI panel full width, margin atas */
-    .ai-panel {
-        padding: 14px !important;
-        margin-top: 10px !important;
-        height: auto !important;
-    }
-    .ai-title {
-        font-size: 0.78rem !important;
-    }
-    .ai-response-box {
-        font-size: 0.83rem !important;
-        padding: 11px 13px !important;
-    }
-    .standby-box {
-        padding: 16px !important;
-        font-size: 0.72rem !important;
-    }
-
-    /* Map title */
-    .map-title {
-        font-size: 0.7rem !important;
-        padding: 8px 12px 5px !important;
-    }
-
-    /* Dataframe scroll horizontal */
-    [data-testid="stDataFrame"] {
-        overflow-x: auto !important;
-        font-size: 0.8rem !important;
-    }
-
-    /* About card */
-    .about-card {
-        padding: 16px 18px !important;
-    }
-    .about-card h3 {
-        font-size: 0.9rem !important;
-    }
-    .about-card p, .about-card li {
-        font-size: 0.82rem !important;
-    }
-
-    /* Member item */
-    .member-item {
-        padding: 7px 10px !important;
-    }
-
-    /* Badge tech */
-    .badge-tech {
-        font-size: 0.65rem !important;
-        padding: 2px 7px !important;
-    }
-
-    /* Sidebar auto-collapse hint */
-    [data-testid="stSidebar"] {
-        min-width: 220px !important;
-        max-width: 260px !important;
-    }
-
-    /* Divider margin */
-    hr {
-        margin: 10px 0 !important;
-    }
+/* 2. Matikan fitur auto-stack (tumpuk ke bawah) bawaan Streamlit pada kolom */
+[data-testid="column"] {
+    width: auto !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
 }
 
-/* =============================================
-   RESPONSIF — HP KECIL (max 480px)
-   ============================================= */
-@media (max-width: 480px) {
-    .hero-header h1 {
-        font-size: 0.95rem !important;
-    }
-    .hero-header .hero-sub {
-        display: none !important;
-    }
-    .hero-status {
-        margin-top: 6px !important;
-    }
-    .block-container {
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-    }
-    iframe[title*="streamlit"] {
-        height: 280px !important;
-    }
+/* 3. Matikan auto-collapse pada Sidebar di HP */
+[data-testid="stSidebar"] {
+    min-width: 300px !important;
+    max-width: 300px !important;
+    transform: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1089,7 +952,7 @@ if menu_pilihan == "📍 Peta UMKM (Utama)":
     # [KOLOM KIRI: VISUALISASI PETA]
     with c_kiri:
         st.markdown('<div class="map-wrapper" style="margin-top:0;">', unsafe_allow_html=True)
-        st.markdown(f'<div class="map-title">🗺   LAYER PETA — {len(f_df)} TITIK LOKASI TERDETEKSI</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="map-title">🗺  LAYER PETA — {len(f_df)} TITIK LOKASI TERDETEKSI</div>', unsafe_allow_html=True)
 
         if (query_user or kat_pilihan != "Semua Kategori") and not f_df.empty:
             center = [f_df['lat'].mean(), f_df['lon'].mean()]
