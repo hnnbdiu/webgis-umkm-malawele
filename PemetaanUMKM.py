@@ -921,7 +921,7 @@ def inisialisasi_nlp():
         stemmer = StemmerFactory().create_stemmer()
         stopwords_dasar = StopWordRemoverFactory().get_stop_words()
         custom_slang = [
-            'info', 'infokan', 'inpo', 'spill', 'tolong', 'kasih', 'tau', 'aja', 'saja', 'kasi', 'dimana', 'kah', 'kh', 'hem', 'dulu', 'mas',
+            'info', 'infokan', 'inpo', 'spill', 'tolong', 'kasih', 'tau', 'aja', 'saja', 'kasi', 'dimana', 'kah', 'kh', 'hem', 'dulu', 'mas', 'cari', 'mencari', 'sedang',
             'banget', 'bgt', 'paling', 'sekali', 'skali', 'coba', 'bisa', 'dong', 'sih', 'rek', 'rekomendasi', 'cariin', 'z', 'dongs','we','pos','nongki','biyasa','km','ddk','bru','jln','p','nobar',
             'ko', 'sa', 'tra', 'trada', 'tara', 'su', 'pi', 'pu', 'tong', 'kam', 'de', 'umkm', 'skli', 'inpokan', 'inpoin', 'infoin','sa', 'ka', 'mo', 'ke', 'bos', 'poster',         
             'dolo', 'dlu', 'toh', 'ka', 'kah', 'pace', 'mace', 'kaka', 'mo', 't4', 'carikan', 'cari', 'dmn', 'dimana', 'ya', 'yah', 'nyak',
