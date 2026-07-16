@@ -1160,8 +1160,11 @@ if menu_pilihan == "📍 Peta UMKM (Utama)":
     col_q, col_k, col_loc = st.columns([1.6, 1, 1])
 
     with col_q:
-        st.markdown('<label style="font-family:\'Exo 2\',sans-serif; font-size:0.8rem; font-weight:600; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase;">🔍  Konsol Pencarian</label>', unsafe_allow_html=True)
+        # Pindahkan form ke atas, lalu masukkan label ke dalam form
         with st.form(key="form_pencarian", clear_on_submit=False):
+            # Label diletakkan di dalam form agar selalu satu grup
+            st.markdown('<label style="font-family:\'Exo 2\',sans-serif; font-size:0.8rem; font-weight:600; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase;">🔍  Konsol Pencarian</label>', unsafe_allow_html=True)
+            
             sub_input, sub_btn = st.columns([5, 1])
             with sub_input:
                 query_user = st.text_input("Konsol Pencarian", placeholder="cth: sa mau pi makan di warung dolo", label_visibility="collapsed")
